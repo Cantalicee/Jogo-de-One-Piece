@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz One Piece - Grand Line</title>
+  <style>
+    :root {
+      --bg-ocean-top: #07192d;
+      --bg-ocean-bottom: #0d3b66;
+      --card-bg: rgba(13, 27, 42, 0.92);
+      --gold: #f4d35e;
+      --gold-dark: #c9a227;
+      --red-pirate: #e63946;
+      --red-hover: #c1121f;
+      --green-win: #2ec4b6;
+      --text-light: #f8f9fa;
+      --text-muted: #a8dadc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(180deg, var(--bg-ocean-top) 0%, var(--bg-ocean-bottom) 100%);
+      color: var(--text-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ondas do mar animadas no fundo */
+    .ocean-waves {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 110px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.35;
+    }
+
+    .wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 100%;
+      background-repeat: repeat-x;
+      animation: waveMove 12s linear infinite;
+    }
+
+    .wave-2 {
+      bottom: 10px;
+      opacity: 0.5;
+      animation: waveMove 18s linear infinite reverse;
+    }
+
+    @keyframes waveMove {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Canvas de confetes */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    /* Botão de Som */
+    .sound-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(244, 211, 94, 0.4);
+      color: var(--gold);
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      z-index: 10;
+      transition: all 0.2s;
+    }
+
+    .sound-btn:hover {
+      background: rgba(244, 211, 94, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* Cartão Principal */
+    .quiz-container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      border: 2px solid var(--gold-dark);
+      border-radius: 20px;
+      padding: 32px 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
+      position: relative;
+      z-index: 2;
+      backdrop-filter: blur(8px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* Animações de feedback */
+    .shake-card {
+      animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+      border-color: var(--red-pirate);
+      box-shadow: 0 0 30px rgba(230, 57, 70, 0.5);
+    }
+
+    .glow-win {
+      border-color: var(--green-win);
+      box-shadow: 0 0 35px rgba(46, 196, 182, 0.6);
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
+      40%, 60% { transform: translate3d(7px, 0, 0); }
+    }
+
+    /* Telas */
+    .screen {
+      display: none;
+      animation: fadeSlideIn 0.4s ease forwards;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Ilustração SVG central */
+    .illustration-box {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 18px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle, rgba(244, 211, 94, 0.16) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-7px); }
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--gold);
+      font-size: 1.9rem;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 10px rgba(244, 211, 94, 0.3);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin-bottom: 24px;
+    }
+
+    /* Barra superior da pergunta */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .timer-badge {
+      background: rgba(244, 211, 94, 0.15);
+      color: var(--gold);
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(244, 211, 94, 0.3);
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 10%;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+      transition: width 0.4s ease;
+    }
+
+    .question-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.45;
+      color: #ffffff;
+    }
+
+    /* Inputs e Botões */
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 1.05rem;
+      border-radius: 12px;
+      border: 2px solid rgba(168, 218, 220, 0.35);
+      background: rgba(7, 25, 45, 0.85);
+      color: #fff;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color 0.25s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--gold);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: var(--red-pirate);
+      color: #fff;
+      box-shadow: 0 5px 15px rgba(230, 57, 70, 0.4);
+    }
+
+    .btn-primary:hover {
+      background: var(--red-hover);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid rgba(168, 218, 220, 0.4);
+      margin-top: 10px;
+      font-size: 0.9rem;
+      padding: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    /* Feedback visual abaixo do input */
+    .feedback-box {
+      min-height: 46px;
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.98rem;
+      display: none;
+    }
+
+    .feedback-box.correct {
+      display: block;
+      background: rgba(46, 196, 182, 0.2);
+      border: 1px solid var(--green-win);
+      color: #80ffdb;
+    }
+
+    .feedback-box.wrong {
+      display: block;
+      background: rgba(230, 57, 70, 0.22);
+      border: 1px solid var(--red-pirate);
+      color: #ffccd5;
+    }
+
+    /* Resumo e Tabela de Ranking */
+    .player-summary {
+      background: rgba(244, 211, 94, 0.12);
+      border: 1px solid rgba(244, 211, 94, 0.35);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 18px;
+      font-size: 0.98rem;
+    }
+
+    .ranking-wrapper {
+      max-height: 250px;
+      overflow-y: auto;
+      margin-bottom: 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: rgba(244, 211, 94, 0.2);
+      color: var(--gold);
+      padding: 10px;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    tr:nth-child(1) td {
+      background: rgba(244, 211, 94, 0.1);
+      font-weight: bold;
+      color: var(--gold);
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <button class="sound-btn" id="btn-sound" onclick="toggleSound()">🔊 Som: ON</button>
+
+  <!-- Ondas decorativas no rodapé -->
+  <div class="ocean-waves">
+    <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,60 C150,120 350,0 600,60 C850,120 1050,0 1200,60 L1200,120 L0,120 Z" fill="#1d4e89"></path>
+    </svg>
+    <svg class="wave wave-2" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,40 C200,100 400,0 600,50 C800,100 1000,10 1200,50 L1200,120 L0,120 Z" fill="#2a6f97"></path>
+    </svg>
+  </div>
+
+  <div class="quiz-container" id="quiz-card">
+    
+    <!-- TELA 1: INÍCIO -->
+    <div id="screen-start" class="screen active">
+      <div class="illustration-box">
+        <!-- Jolly Roger SVG -->
+        <svg width="95" height="95" viewBox="0 0 100 100">
+          <line x1="15" y1="20" x2="85" y2="80" stroke="#f8f9fa" stroke-width="7" stroke-linecap="round"/>
+          <line x1="85" y1="20" x2="15" y2="80" stroke="#f8f9fa" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="50" cy="48" r="24" fill="#f8f9fa"/>
+          <rect x="38" y="65" width="24" height="14" rx="4" fill="#f8f9fa"/>
+          <circle cx="41" cy="48" r="5" fill="#07192d"/>
+          <circle cx="59" cy="48" r="5" fill="#07192d"/>
+          <!-- Chapéu de Palha na caveira -->
+          <path d="M22 36 Q50 12 78 36 Z" fill="#f4d35e"/>
+          <rect x="14" y="34" width="72" height="6" rx="3" fill="#f4d35e"/>
+          <rect x="26" y="30" width="48" height="4" fill="#e63946"/>
+        </svg>
+      </div>
+      <h1>QUIZ ONE PIECE</h1>
+      <p class="subtitle">Prove que você é digno de encontrar o tesouro na Grand Line! (10 Perguntas)</p>
+      <input type="text" id="player-name" placeholder="Digite o nome do seu Pirata..." maxlength="20">
+      <button class="btn btn-primary" onclick="startQuiz()">⚓ Iniciar Aventura!</button>
+    </div>
+
+    <!-- TELA 2: PERGUNTAS -->
+    <div id="screen-quiz" class="screen">
+      <div class="quiz-header">
+        <span id="question-counter">Pergunta 1 de 10</span>
+        <span class="timer-badge" id="live-timer">⏱️ 0.0s</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="illustration-box" id="question-illustration"></div>
+
+      <div class="question-text" id="question-text">Carregando pergunta...</div>
+
+      <input type="text" id="answer-input" placeholder="Digite sua resposta aqui..." autocomplete="off">
+      <button class="btn btn-primary" id="btn-submit" onclick="submitAnswer()">Responder e Avançar ➔</button>
+
+      <div class="feedback-box" id="feedback-box"></div>
+    </div>
+
+    <!-- TELA 3: RANKING FINAL -->
+    <div id="screen-ranking" class="screen">
+      <div class="illustration-box">
+        <!-- Baú do Tesouro SVG -->
+        <svg width="95" height="95" viewBox="0 0 100 100">
+          <rect x="18" y="42" width="64" height="40" rx="5" fill="#8d5524" stroke="#f4d35e" stroke-width="3"/>
+          <path d="M18 42 Q50 15 82 42 Z" fill="#a46628" stroke="#f4d35e" stroke-width="3"/>
+          <rect x="44" y="36" width="12" height="16" rx="2" fill="#f4d35e"/>
+          <circle cx="50" cy="44" r="2.5" fill="#07192d"/>
+          <circle cx="32" cy="24" r="3" fill="#f4d35e"/>
+          <circle cx="68" cy="22" r="4" fill="#f4d35e"/>
+          <circle cx="50" cy="14" r="3" fill="#f4d35e"/>
+        </svg>
+      </div>
+      <h1>🏆 CLASSIFICAÇÃO PIRATA</h1>
+      <div class="player-summary" id="player-summary"></div>
+
+      <div class="ranking-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Pirata</th>
+              <th>Acertos</th>
+              <th>Erros</th>
+              <th>Tempo</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-body"></tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-primary" onclick="resetToStart()">🏴‍☠️ Jogar com Outro Pirata</button>
+      <button class="btn btn-secondary" onclick="clearRanking()">🗑️ Limpar Ranking</button>
+    </div>
+
+  </div>
+
+  <script>
+    // Banco de 10 perguntas + ilustrações SVG exclusivas
+    const quizData = [
+      {
+        question: "1. Quem deu o chapéu de palha ao Luffy?",
+        accepted: ["shanks", "ruivo", "shanks o ruivo"],
+        display: "Shanks",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <ellipse cx="50" cy="62" rx="42" ry="14" fill="#f4d35e" stroke="#c9a227" stroke-width="2"/>
+                <path d="M24 60 C24 30, 76 30, 76 60 Z" fill="#f4d35e" stroke="#c9a227" stroke-width="2"/>
+                <path d="M25 53 Q50 60 75 53 L76 59 Q50 66 24 59 Z" fill="#e63946"/>
+              </svg>`
+      },
+      {
+        question: "2. Quem é conhecido como o Deus do Sol?",
+        accepted: ["nika", "joy boy", "joyboy"],
+        display: "Nika",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="22" fill="#f4d35e"/>
+                <g stroke="#f4d35e" stroke-width="5" stroke-linecap="round">
+                  <line x1="50" y1="12" x2="50" y2="22"/>
+                  <line x1="50" y1="78" x2="50" y2="88"/>
+                  <line x1="12" y1="50" x2="22" y2="50"/>
+                  <line x1="78" y1="50" x2="88" y2="50"/>
+                  <line x1="23" y1="23" x2="30" y2="30"/>
+                  <line x1="70" y1="70" x2="77" y2="77"/>
+                  <line x1="77" y1="23" x2="70" y2="30"/>
+                  <line x1="30" y1="70" x2="23" y2="77"/>
+                </g>
+              </svg>`
+      },
+      {
+        question: "3. Qual é o nome da ilha onde Roger deixou o One Piece?",
+        accepted: ["laugh tale", "raftel"],
+        display: "Laugh Tale",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <rect x="18" y="20" width="64" height="60" rx="6" fill="#faedcd" stroke="#d4a373" stroke-width="3"/>
+                <path d="M30 65 Q45 45 55 55 T70 35" fill="none" stroke="#8d5524" stroke-width="3" stroke-dasharray="4,4"/>
+                <line x1="62" y1="28" x2="76" y2="42" stroke="#e63946" stroke-width="5" stroke-linecap="round"/>
+                <line x1="76" y1="28" x2="62" y2="42" stroke="#e63946" stroke-width="5" stroke-linecap="round"/>
+              </svg>`
+      },
+      {
+        question: "4. Qual é a transformação de Luffy que parece um desenho animado?",
+        accepted: ["gear 5", "gear five", "gear quinto", "quinta marcha"],
+        display: "Gear 5",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <path d="M25 65 A15 15 0 0 1 35 38 A18 18 0 0 1 68 38 A15 15 0 0 1 75 65 Z" fill="#ffffff"/>
+                <polygon points="52,22 40,52 52,52 45,78 65,46 52,46" fill="#f4d35e"/>
+              </svg>`
+      },
+      {
+        question: "5. Quem foi integrante da Baroque Works e entrou para os Chapéus de Palha?",
+        accepted: ["nico robin", "robin", "miss all sunday"],
+        display: "Nico Robin",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <circle cx="50" cy="32" r="10" fill="#ff70a6"/>
+                <circle cx="67" cy="45" r="10" fill="#ff70a6"/>
+                <circle cx="60" cy="65" r="10" fill="#ff70a6"/>
+                <circle cx="40" cy="65" r="10" fill="#ff70a6"/>
+                <circle cx="33" cy="45" r="10" fill="#ff70a6"/>
+                <circle cx="50" cy="50" r="9" fill="#f4d35e"/>
+              </svg>`
+      },
+      {
+        question: "6. Qual era o nome do primeiro navio dos Chapéus de Palha?",
+        accepted: ["going merry", "merry"],
+        display: "Going Merry",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <path d="M20 62 L80 62 L70 80 L30 80 Z" fill="#c9a227"/>
+                <line x1="50" y1="22" x2="50" y2="62" stroke="#8d5524" stroke-width="4"/>
+                <path d="M50 25 Q75 40 50 56 Z" fill="#f8f9fa"/>
+                <circle cx="24" cy="56" r="8" fill="#ffffff"/>
+              </svg>`
+      },
+      {
+        question: "7. Quem é o espadachim do bando que usa o estilo de três espadas?",
+        accepted: ["zoro", "roronoa zoro"],
+        display: "Roronoa Zoro",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <line x1="20" y1="75" x2="80" y2="25" stroke="#a8dadc" stroke-width="5" stroke-linecap="round"/>
+                <line x1="20" y1="25" x2="80" y2="75" stroke="#a8dadc" stroke-width="5" stroke-linecap="round"/>
+                <line x1="50" y1="15" x2="50" y2="85" stroke="#2ec4b6" stroke-width="5" stroke-linecap="round"/>
+              </svg>`
+      },
+      {
+        question: "8. Qual é o nome do irmão mais velho de Luffy que tinha o poder do fogo?",
+        accepted: ["ace", "portgas d ace", "portgas d. ace"],
+        display: "Portgas D. Ace",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <path d="M50 15 C70 38, 80 55, 65 78 C58 85, 42 85, 35 78 C20 55, 35 40, 50 15 Z" fill="#f77f00"/>
+                <path d="M50 38 C60 50, 64 62, 55 75 C52 78, 48 78, 45 75 C36 62, 42 50, 50 38 Z" fill="#fcbf49"/>
+              </svg>`
+      },
+      {
+        question: "9. Quem é a rena médica da tripulação dos Chapéus de Palha?",
+        accepted: ["chopper", "tony tony chopper"],
+        display: "Tony Tony Chopper",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <rect x="32" y="28" width="36" height="34" rx="4" fill="#ff70a6"/>
+                <ellipse cx="50" cy="62" rx="34" ry="9" fill="#ff70a6"/>
+                <rect x="46" y="36" width="8" height="20" fill="#ffffff"/>
+                <rect x="40" y="42" width="20" height="8" fill="#ffffff"/>
+              </svg>`
+      },
+      {
+        question: "10. Qual é o nome do segundo navio dos Chapéus de Palha, construído por Franky?",
+        accepted: ["thousand sunny", "sunny"],
+        display: "Thousand Sunny",
+        svg: `<svg width="95" height="95" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="28" fill="#f77f00"/>
+                <circle cx="50" cy="50" r="19" fill="#f4d35e"/>
+                <circle cx="43" cy="46" r="3" fill="#07192d"/>
+                <circle cx="57" cy="46" r="3" fill="#07192d"/>
+                <polygon points="50,51 46,56 54,56" fill="#e63946"/>
+              </svg>`
+      }
+    ];
+
+    // Variáveis de Estado
+    let currentPlayer = "";
+    let currentQuestionIndex = 0;
+    let scoreHits = 0;
+    let scoreMisses = 0;
+    let startTime = 0;
+    let timerInterval = null;
+    let isTransitioning = false;
+    let soundEnabled = true;
+
+    // Carrega ranking salvo no navegador
+    let ranking = JSON.parse(localStorage.getItem("onePieceRanking")) || [];
+
+    // Sistema de Áudio Sintetizado (Web Audio API - sem arquivos externos)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      if (audioCtx.state === "suspended") audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+
+      if (type === "win") {
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(523.25, now); // Dó
+        osc.frequency.setValueAtTime(659.25, now + 0.1); // Mi
+        osc.frequency.setValueAtTime(783.99, now + 0.2); // Sol
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        osc.start(now);
+        osc.stop(now + 0.4);
+      } else if (type === "lose") {
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(120, now + 0.35);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === "fanfare") {
+        osc.type = "triangle";
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, i) => {
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+        });
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+        osc.start(now);
+        osc.stop(now + 0.65);
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById("btn-sound").textContent = soundEnabled ? "🔊 Som: ON" : "🔇 Som: OFF";
+    }
+
+    // Navegação entre telas
+    function showScreen(screenId) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(screenId).classList.add("active");
+    }
+
+    // Iniciar Quiz
+    function startQuiz() {
+      const nameInput = document.getElementById("player-name");
+      const name = nameInput.value.trim();
+
+      if (!name) {
+        alert("Ei, pirata! Digite seu nome antes de zarpar!");
+        nameInput.focus();
+        return;
+      }
+
+      currentPlayer = name;
+      currentQuestionIndex = 0;
+      scoreHits = 0;
+      scoreMisses = 0;
+      isTransitioning = false;
+
+      startTime = Date.now();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById("live-timer").textContent = `⏱️ ${elapsed}s`;
+      }, 100);
+
+      showScreen("screen-quiz");
+      loadQuestion();
+    }
+
+    // Carregar pergunta atual
+    function loadQuestion() {
+      const q = quizData[currentQuestionIndex];
+      document.getElementById("question-counter").textContent = `Pergunta ${currentQuestionIndex + 1} de ${quizData.length}`;
+      document.getElementById("progress-fill").style.width = `${((currentQuestionIndex + 1) / quizData.length) * 100}%`;
+      document.getElementById("question-illustration").innerHTML = q.svg;
+      document.getElementById("question-text").textContent = q.question;
+
+      const input = document.getElementById("answer-input");
+      input.value = "";
+      input.disabled = false;
+      input.focus();
+
+      const btn = document.getElementById("btn-submit");
+      btn.disabled = false;
+
+      const feedback = document.getElementById("feedback-box");
+      feedback.className = "feedback-box";
+      feedback.style.display = "none";
+
+      const card = document.getElementById("quiz-card");
+      card.classList.remove("shake-card", "glow-win");
+    }
+
+    // Validar resposta e mudar de tela
+    function submitAnswer() {
+      if (isTransitioning) return;
+
+      const input = document.getElementById("answer-input");
+      const userAnswer = input.value.trim().toLowerCase();
+
+      if (!userAnswer) {
+        input.focus();
+        return;
+      }
+
+      isTransitioning = true;
+      input.disabled = true;
+      document.getElementById("btn-submit").disabled = true;
+
+      const q = quizData[currentQuestionIndex];
+      const feedback = document.getElementById("feedback-box");
+      const card = document.getElementById("quiz-card");
+
+      const isCorrect = q.accepted.includes(userAnswer);
+
+      if (isCorrect) {
+        scoreHits++;
+        playSound("win");
+        launchConfetti(35);
+        card.classList.add("glow-win");
+        feedback.textContent = `🎉 PARABÉNS! Resposta correta: ${q.display}!`;
+        feedback.className = "feedback-box correct";
+      } else {
+        scoreMisses++;
+        playSound("lose");
+        card.classList.add("shake-card");
+        feedback.textContent = `❌ Você errou! A resposta era: ${q.display}.`;
+        feedback.className = "feedback-box wrong";
+      }
+
+      // Aguarda 1.4s para o jogador ver o feedback e avança automaticamente
+      setTimeout(() => {
+        currentQuestionIndex++;
+        isTransitioning = false;
+
+        if (currentQuestionIndex < quizData.length) {
+          loadQuestion();
+        } else {
+          finishQuiz();
+        }
+      }, 1400);
+    }
+
+    // Finalizar partida e atualizar ranking
+    function finishQuiz() {
+      clearInterval(timerInterval);
+      const totalTime = parseFloat(((Date.now() - startTime) / 1000).toFixed(2));
+
+      playSound("fanfare");
+      launchConfetti(100);
+
+      ranking.push({
+        name: currentPlayer,
+        hits: scoreHits,
+        misses: scoreMisses,
+        time: totalTime
+      });
+
+      // Ordena por maior número de acertos e menor tempo como desempate
+      ranking.sort((a, b) => {
+        if (b.hits !== a.hits) return b.hits - a.hits;
+        return a.time - b.time;
+      });
+
+      localStorage.setItem("onePieceRanking", JSON.stringify(ranking));
+
+      document.getElementById("player-summary").innerHTML = `
+        <strong>${currentPlayer}</strong>, você acertou <strong>${scoreHits} de ${quizData.length}</strong> perguntas (${scoreMisses} erros) em <strong>${totalTime}s</strong>!
+      `;
+
+      renderRankingTable();
+      showScreen("screen-ranking");
+    }
+
+    function renderRankingTable() {
+      const tbody = document.getElementById("ranking-body");
+      tbody.innerHTML = "";
+
+      ranking.forEach((player, index) => {
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}º`;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${medal}</td>
+          <td>${player.name}</td>
+          <td>${player.hits}/${quizData.length}</td>
+          <td>${player.misses}</td>
+          <td>${player.time.toFixed(2)}s</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function resetToStart() {
+      document.getElementById("player-name").value = "";
+      showScreen("screen-start");
+      document.getElementById("player-name").focus();
+    }
+
+    function clearRanking() {
+      if (confirm("Deseja realmente apagar toda a classificação dos piratas?")) {
+        ranking = [];
+        localStorage.removeItem("onePieceRanking");
+        renderRankingTable();
+      }
+    }
+
+    // Suporte para tecla ENTER nos campos de texto
+    document.getElementById("player-name").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") startQuiz();
+    });
+
+    document.getElementById("answer-input").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") submitAnswer();
+    });
+
+    // Sistema de Confetes em Canvas
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function launchConfetti(count) {
+      const colors = ["#f4d35e", "#e63946", "#2ec4b6", "#ffffff", "#ff9f1c"];
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height * 0.4 - 50,
+          w: Math.random() * 10 + 5,
+          h: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 6,
+          vy: Math.random() * 4 + 2,
+          angle: Math.random() * 360,
+          spin: (Math.random() - 0.5) * 10
+        });
+      }
+    }
+
+    function updateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p, index) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.spin;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.angle * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+
+        if (p.y > canvas.height) {
+          particles.splice(index, 1);
+        }
+      });
+      requestAnimationFrame(updateConfetti);
+    }
+    updateConfetti();
+  </script>
+</body>
+</html>
